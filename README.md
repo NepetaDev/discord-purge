@@ -1,6 +1,6 @@
 # discord-purge
 
-Remove all your messages from a given Discord guild (server).
+Remove all of your messages from a given Discord guild (server) or a DM (direct message) channel.
 
 ## How to install:
 

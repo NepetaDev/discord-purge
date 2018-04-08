@@ -5,9 +5,9 @@ const ProgressBar = require('progress');
 const ENDPOINT = 'https://discordapp.com/api/v6/';
 var headers = {};
 
-async function getMessages(guild, user) {
+async function getMessages(type, target, user) {
   return JSON.parse(await request({
-    'url': ENDPOINT + 'guilds/' + guild + '/messages/search?author_id=' + user + '&include_nsfw=true',
+    'url': ENDPOINT + type + 's/' + target + '/messages/search?author_id=' + user + '&include_nsfw=true',
     'headers': headers
   }));
 }
@@ -24,11 +24,17 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function removeMessages(guild, user){
+async function removeMessages(type, target, user){
   let bar;
 
   while (true) {
-    let res = await getMessages(guild, user);
+    let res = await getMessages(type, target, user);
+    if (res.hasOwnProperty('document_indexed') && res.document_indexed == 0) {
+      console.log('Not indexed yet. Retrying after 2 seconds.');
+      await sleep(2000);
+      continue;  
+    }
+
     let messages = res.messages;
 
     if (!bar) { 
@@ -73,23 +79,52 @@ async function userInput() {
 
   console.log('Logged in as: ' + user.username + '#' + user.discriminator);
 
-  let guilds = JSON.parse(await request({
-    'url': ENDPOINT + '/users/@me/guilds',
+  answers = await inquirer.prompt([
+    {
+      'type': 'list',
+      'name': 'type',
+      'message': 'What would you like to delete?',
+      'choices': [{
+        'value': 'guild',
+        'name': 'Guild messages'
+      },
+      {
+        'value': 'channel',
+        'name': 'DMs'
+      }]
+    }
+  ]);
+
+  let type = answers.type;
+
+  let targets = JSON.parse(await request({
+    'url': ENDPOINT + '/users/@me/' + type + 's',
     'headers': headers
   }));
 
-  guilds = guilds.map(x => {
+  targets = targets.map(x => {
     x.value = x.id;
+
+    if (type == 'channel') {
+      x.name = x.recipients.reduce(
+        (acc, y, i) => (i != 0 ? acc + ', ' : '') + y.username + '#' + y.discriminator,
+      "");
+    }
+
     return x;
   });
 
   answers = await inquirer.prompt([
     {
       'type': 'list',
-      'name': 'guild',
-      'message': 'Guild',
-      'choices': guilds
-    },
+      'name': 'target',
+      'message': type,
+      'choices': targets
+    }
+  ]);
+
+  let target = answers.target;
+  answers = await inquirer.prompt([
     {
       'type': 'confirm',
       'name': 'confirm',
@@ -99,7 +134,7 @@ async function userInput() {
   ]);
 
   if (answers.confirm) {
-    await removeMessages(answers.guild, user.id);
+    await removeMessages(type, target, user.id);
   }
 }
 
