@@ -4,6 +4,8 @@ const ProgressBar = require('progress');
 
 const ENDPOINT = 'https://discordapp.com/api/v6/';
 var headers = {};
+let ignoreChannels = {};
+let ignores = 0
 
 async function getMessages(type, target, user) {
   return JSON.parse(await request({
@@ -13,11 +15,14 @@ async function getMessages(type, target, user) {
 }
 
 async function removeMessage(channel_id, id) {
-  await request({
-    'method': 'DELETE',
-    'url': ENDPOINT + 'channels/' + channel_id + '/messages/' + id,
-    'headers': headers
-  });
+  if (ignoreChannels[channel_id])
+    ignores++
+  else
+    await request({
+      'method': 'DELETE',
+      'url': ENDPOINT + 'channels/' + channel_id + '/messages/' + id,
+      'headers': headers
+    });
 }
 
 function sleep(ms) {
@@ -29,7 +34,7 @@ async function removeMessages(type, target, user){
 
   while (true) {
     let res = await getMessages(type, target, user);
-    if (res.hasOwnProperty('document_indexed') && res.document_indexed == 0) {
+    if (res.hasOwnProperty('document_indexed') && ind == 0) {
       console.log('Not indexed yet. Retrying after 2 seconds.');
       await sleep(2000);
       continue;  
@@ -41,7 +46,7 @@ async function removeMessages(type, target, user){
       bar = new ProgressBar(':bar :percent :current/:total eta: :eta s', { total: res.total_results });
     }
 
-    if (messages.length == 0 || res.total_results == 0) {
+    if ((messages.length - ignores) == 0 || (res.total_results - ignores) == 0) {
       console.log('Done!');
       return;
     }
@@ -94,6 +99,24 @@ async function userInput() {
       }]
     }
   ]);
+
+  if (answers.type == 'guild') {
+    let r = await inquirer.prompt([{
+      'type': 'input',
+      'name': 'list',
+      'message': 'Ignored Channels (seperate with commas; leave blank if none)'
+    }]);
+
+    let u = {};
+    if (!!r.list && r.list !== '') {
+      let l = r.list.split(',')
+      for (const i in l)
+        u[l[i].trim()] = true
+    }
+    ignoreChannels = u;
+
+    delete r
+  }
 
   let type = answers.type;
 
