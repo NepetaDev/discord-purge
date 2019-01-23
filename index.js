@@ -18,11 +18,15 @@ async function removeMessage(channel_id, id) {
   if (ignoreChannels[channel_id])
     ignores++
   else
+    try {
     await request({
       'method': 'DELETE',
       'url': ENDPOINT + 'channels/' + channel_id + '/messages/' + id,
       'headers': headers
     });
+    } catch(e) {
+      console.log("Failed to delete message "+id+". Probably a system message?"); 
+    }
 }
 
 function sleep(ms) {
