@@ -25,7 +25,8 @@ async function removeMessage(channel_id, id) {
       'headers': headers
     });
     } catch(e) {
-      console.log("Failed to delete message "+id+". Probably a system message?"); 
+      console.log("Failed to delete message "+id+". Probably a system message?");
+      console.log(e);
     }
 }
 
