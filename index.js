@@ -6,10 +6,11 @@ const ENDPOINT = 'https://discordapp.com/api/v6/';
 var headers = {};
 let ignoreChannels = {};
 let ignores = 0
+let offset = 0
 
-async function getMessages(type, target, user) {
+async function getMessages(type, target, user, offset) {
   return JSON.parse(await request({
-    'url': ENDPOINT + type + 's/' + target + '/messages/search?author_id=' + user + '&include_nsfw=true',
+    'url': ENDPOINT + type + 's/' + target + '/messages/search?author_id=' + user + '&include_nsfw=true&offset=' + offset,
     'headers': headers
   }));
 }
@@ -38,7 +39,7 @@ async function removeMessages(type, target, user){
   let bar;
 
   while (true) {
-    let res = await getMessages(type, target, user);
+    let res = await getMessages(type, target, user, offset);
     if (res.hasOwnProperty('document_indexed') && ind == 0) {
       console.log('Not indexed yet. Retrying after 2 seconds.');
       await sleep(2000);
@@ -46,6 +47,8 @@ async function removeMessages(type, target, user){
     }
 
     let messages = res.messages;
+    
+    offset += 25;
 
     if (!bar) { 
       bar = new ProgressBar(':bar :percent :current/:total eta: :eta s', { total: res.total_results });
