@@ -28,6 +28,7 @@ async function removeMessage(channel_id, id) {
     } catch(e) {
       console.log("Failed to delete message "+id);
       console.log(e.error);
+      offset++;
     }
 }
 
@@ -47,8 +48,6 @@ async function removeMessages(type, target, user){
     }
 
     let messages = res.messages;
-    
-    offset += 25;
 
     if (!bar) { 
       bar = new ProgressBar(':bar :percent :current/:total eta: :eta s', { total: res.total_results });
