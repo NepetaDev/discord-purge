@@ -67,7 +67,7 @@ async function removeMessages(type, target, user){
 
     for (var i = 0; i < messages.length; i++) {
       await removeMessage(messages[i].channel_id, messages[i].id);
-      await sleep(50);
+      await sleep(100);
       bar.tick();
     }
   }
